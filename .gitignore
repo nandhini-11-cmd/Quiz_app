@@ -1,0 +1,18 @@
+# root ignores
+node_modules/
+.env
+*.env
+
+# subprojects
+frontend/node_modules/
+backend/node_modules/
+frontend/dist/
+frontend/build/
+backend/.env
+backend/uploads/
+*.log
+
+# OS & editor junk
+.DS_Store
+Thumbs.db
+.vscode/

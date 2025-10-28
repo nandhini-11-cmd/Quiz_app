@@ -1,0 +1,10 @@
+@import "tailwindcss";
+* {
+  color-scheme: light !important;
+}
+
+@media print {
+  .hide-on-pdf {
+    display: none !important;
+  }
+}
