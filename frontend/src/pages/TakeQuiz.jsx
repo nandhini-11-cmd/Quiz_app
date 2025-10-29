@@ -12,8 +12,9 @@ export default function TakeQuiz() {
   const [timerTotal, setTimerTotal] = useState(null);
   const [started, setStarted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [timeUp, setTimeUp] = useState(false); // ✅ new state
 
-  // Format timer display (MM:SS)
+  // Format MM:SS
   const formatTime = (secs) => {
     if (secs === null || secs === undefined) return "--:--";
     const m = Math.floor(secs / 60);
@@ -21,7 +22,7 @@ export default function TakeQuiz() {
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  // Fetch quiz details
+  // Fetch quiz
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
@@ -29,9 +30,8 @@ export default function TakeQuiz() {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setQuiz(data);
-
         const qCount = data.questions.length;
-        const baseTime = Math.ceil(qCount / 10) * 60;
+        const baseTime = Math.ceil(qCount / 5) * 60;
         setTimer(baseTime);
         setTimerTotal(baseTime);
         setStarted(true);
@@ -42,13 +42,13 @@ export default function TakeQuiz() {
     fetchQuiz();
   }, [id]);
 
-  // Countdown timer
+  // Countdown
   useEffect(() => {
     if (!started || timer === null) return;
 
     if (timer <= 0) {
       setStarted(false);
-      handleSubmit(true); // auto submit
+      setTimeUp(true); // ✅ trigger popup
       return;
     }
 
@@ -56,22 +56,28 @@ export default function TakeQuiz() {
     return () => clearInterval(countdown);
   }, [started, timer]);
 
-  // Handle option selection
+  // Handle time-up auto-submit
+  useEffect(() => {
+    if (timeUp) {
+      // show popup for 2s, then auto-submit
+      const timeout = setTimeout(() => handleSubmit(true), 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [timeUp]);
+
+  // Option select
   const handleSelect = (qId, option) => {
     setAnswers((prev) => ({ ...prev, [qId]: option }));
   };
 
-  // Submit quiz answers
+  // Submit
   const handleSubmit = async (autoSubmit = false) => {
     if (submitting) return;
     setSubmitting(true);
 
     try {
       const formattedAnswers = Object.entries(answers).map(
-        ([questionId, answer]) => ({
-          questionId,
-          answer,
-        })
+        ([questionId, answer]) => ({ questionId, answer })
       );
 
       const { data } = await API.post(
@@ -100,12 +106,11 @@ export default function TakeQuiz() {
       alert(err.response?.data?.message || "Failed to submit quiz");
     } finally {
       setSubmitting(false);
+      setTimeUp(false);
     }
   };
 
-  useEffect(() => {
-    setAnswers({});
-  }, [id]);
+  useEffect(() => setAnswers({}), [id]);
 
   if (!quiz)
     return <div className="text-center text-gray-500 mt-10">Loading quiz...</div>;
@@ -117,7 +122,7 @@ export default function TakeQuiz() {
 
   return (
     <div className="relative max-w-3xl mx-auto mt-10 bg-white p-6 rounded-xl shadow-lg">
-      {/* Back Button */}
+      {/* Back */}
       <div className="flex justify-end">
         <button
           onClick={() => navigate(`/student/dashboard`)}
@@ -127,7 +132,7 @@ export default function TakeQuiz() {
         </button>
       </div>
 
-      {/* Title & Description */}
+      {/* Title */}
       <h1 className="text-2xl font-bold mb-4 text-center text-indigo-700">
         {quiz.title}
       </h1>
@@ -152,7 +157,6 @@ export default function TakeQuiz() {
           <p className="font-medium mb-2 text-gray-800">
             {index + 1}. {q.questionText}
           </p>
-
           <div className="space-y-1">
             {q.options.map((opt, i) => (
               <label
@@ -174,7 +178,7 @@ export default function TakeQuiz() {
         </div>
       ))}
 
-      {/* Submit Button */}
+      {/* Submit */}
       <button
         onClick={() => handleSubmit(false)}
         disabled={submitting}
@@ -211,7 +215,19 @@ export default function TakeQuiz() {
         )}
       </button>
 
-      {/* Full-Screen Overlay While Submitting */}
+      {/* ⏰ Time-up Popup */}
+      {timeUp && !submitting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-3">⏰ Time’s Up!</h2>
+            <p className="text-gray-700">
+              Your quiz time has ended. Submitting automatically...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Evaluating Overlay */}
       {submitting && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex flex-col justify-center items-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col items-center gap-3">

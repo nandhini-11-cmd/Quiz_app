@@ -45,9 +45,14 @@ export default function Register({ setUser = () => {} }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // ✅ Update preview and selected avatar using API_BASE
-      setSelectedAvatar(data.imagePath);
-      setPreview(`${API_BASE}${data.imagePath}`);
+     
+const imagePath = data.imagePath.startsWith("/uploads")
+  ? data.imagePath
+  : `/uploads/${data.imagePath.replace(/^public[\\/]+/, "")}`;
+
+setSelectedAvatar(imagePath);
+setPreview(`${API_BASE}${imagePath}`);
+
     } catch (err) {
       alert(err.response?.data?.message || "Image upload failed");
     } finally {

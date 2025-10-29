@@ -31,7 +31,7 @@ export default function About() {
         className="bg-white shadow-lg rounded-2xl p-6 md:p-10 mb-8 max-w-4xl text-left"
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.12 }}
       >
         <h2 className="text-2xl font-bold text-indigo-700 mb-4">👩‍🏫 For Teachers</h2>
         <ul className="list-disc ml-6 space-y-2 text-gray-700">
@@ -54,7 +54,7 @@ export default function About() {
         className="bg-white shadow-lg rounded-2xl p-6 md:p-10 mb-8 max-w-4xl text-left"
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.8 }}
+        transition={{ delay: 0.14 }}
       >
         <h2 className="text-2xl font-bold text-green-700 mb-4">🎓 For Students</h2>
         <ul className="list-disc ml-6 space-y-2 text-gray-700">
