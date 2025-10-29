@@ -6,35 +6,50 @@ import authRoutes from "./routes/authRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
-import path from "path";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import path from "path";
 
 dotenv.config();
 connectDB();
 
 const app = express();
 
-app.use(cors());
+// ✅ Allow both local and Netlify frontend origins
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",              
+      "https://quiznova-ai-powered.netlify.app/",        
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
-const __dirname = path.resolve();
+// ✅ Optional: helpful debug log
 app.use((req, res, next) => {
-  console.log("[AI DEBUG] Incoming:", req.method, req.url);
+  console.log("[AI DEBUG]", req.method, req.url);
   next();
 });
+
+// ✅ Serve static public assets
+const __dirname = path.resolve();
 app.use("/avatars", express.static(path.join(__dirname, "public/avatars")));
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
+// ✅ API Routes
 app.use("/api/users", authRoutes);
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/upload", uploadRoutes);
 
-
+// ✅ Health check route
 app.get("/", (req, res) => {
-    res.send("Quiz app backend is running......");
-    });
+  res.send("✅ Quiz App backend is running fine!");
+});
 
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, ()=> console.log(`Server running on port ${PORT}`));
+// ✅ Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
