@@ -21,7 +21,7 @@ export default function Home() {
     >
       {/* Heading */}
       <motion.h1
-        className="text-5xl md:text-6xl font-extrabold text-indigo-700 mb-4"
+        className="mt-6 text-3xl md:text-6xl font-extrabold text-indigo-700 mb-4"
         variants={fadeInUp}
       >
         Welcome to <span className="text-blue-600">QuizNova</span> ⚡

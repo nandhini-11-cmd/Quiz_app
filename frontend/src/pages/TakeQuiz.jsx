@@ -59,7 +59,6 @@ export default function TakeQuiz() {
   // Handle time-up auto-submit
   useEffect(() => {
     if (timeUp) {
-      // show popup for 2s, then auto-submit
       const timeout = setTimeout(() => handleSubmit(true), 2000);
       return () => clearTimeout(timeout);
     }
@@ -121,7 +120,7 @@ export default function TakeQuiz() {
       : 100;
 
   return (
-    <div className="relative max-w-3xl mx-auto mt-10 bg-white p-6 rounded-xl shadow-lg">
+    <div className="max-w-3xl mx-auto mt-10 bg-white p-6 rounded-xl shadow-lg">
       {/* Back */}
       <div className="flex justify-end">
         <button
@@ -138,53 +137,56 @@ export default function TakeQuiz() {
       </h1>
       <p className="text-gray-600 text-center mb-6">{quiz.description}</p>
 
-      {/* Timer (Sticky) */}
-<div className="sticky top-0 bg-white py-3 z-20 border-b border-gray-200">
-  <div className="text-right mb-1 px-2">
-    <p className="font-semibold text-red-600">
-      Time Left: {formatTime(timer)}
-    </p>
-  </div>
-  <div className="w-full bg-gray-200 h-2 rounded-full">
-    <div
-      className="h-2 bg-green-500 rounded-full transition-all duration-500"
-      style={{ width: `${progressPct}%` }}
-    />
-  </div>
-</div>
-
-      {/* Questions */}
-      {quiz.questions.map((q, index) => (
-        <div key={q._id} className="mb-6 border border-gray-200 p-4 rounded-lg">
-          <p className="font-medium mb-2 text-gray-800">
-            {index + 1}. {q.questionText}
-          </p>
-          <div className="space-y-1">
-            {q.options.map((opt, i) => (
-              <label
-                key={i}
-                className="block p-2 rounded hover:bg-blue-50 cursor-pointer"
-              >
-                <input
-                  type="radio"
-                  name={q._id}
-                  value={opt}
-                  checked={answers[q._id] === opt}
-                  onChange={() => handleSelect(q._id, opt)}
-                  className="mr-2 accent-blue-600"
-                />
-                {opt}
-              </label>
-            ))}
+      {/* Scrollable Quiz Section */}
+      <div className="max-h-[80vh] overflow-y-auto relative scroll-smooth">
+        {/* Timer (Sticky) */}
+        <div className="sticky top-0 bg-white py-3 z-30 border-b border-gray-200 shadow-sm">
+          <div className="text-right mb-1 px-2">
+            <p className="font-semibold text-red-600">
+              Time Left: {formatTime(timer)}
+            </p>
+          </div>
+          <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-green-500 rounded-full transition-all duration-500"
+              style={{ width: `${progressPct}%` }}
+            />
           </div>
         </div>
-      ))}
+
+        {/* Questions */}
+        {quiz.questions.map((q, index) => (
+          <div key={q._id} className="mb-6 border border-gray-200 p-4 rounded-lg">
+            <p className="font-medium mb-2 text-gray-800">
+              {index + 1}. {q.questionText}
+            </p>
+            <div className="space-y-1">
+              {q.options.map((opt, i) => (
+                <label
+                  key={i}
+                  className="block p-2 rounded hover:bg-blue-50 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name={q._id}
+                    value={opt}
+                    checked={answers[q._id] === opt}
+                    onChange={() => handleSelect(q._id, opt)}
+                    className="mr-2 accent-blue-600"
+                  />
+                  {opt}
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Submit */}
       <button
         onClick={() => handleSubmit(false)}
         disabled={submitting}
-        className="bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed 
+        className="mt-4 bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed 
                    text-white py-2 px-6 rounded-lg w-full font-semibold transition duration-300 
                    flex justify-center items-center gap-2"
       >
