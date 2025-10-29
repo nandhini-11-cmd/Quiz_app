@@ -13,14 +13,22 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const allowedOrigins = [
+  "http://localhost:5173",                     
+  "https://quiznova-ai-powered.netlify.app",   
+];
 
-// ✅ Allow both local and Netlify frontend origins
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",              
-      "https://quiznova-ai-powered.netlify.app/",        
-    ],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `CORS policy: The origin ${origin} is not allowed`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
