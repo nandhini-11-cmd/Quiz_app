@@ -138,18 +138,20 @@ export default function TakeQuiz() {
       </h1>
       <p className="text-gray-600 text-center mb-6">{quiz.description}</p>
 
-      {/* Timer */}
-      <div className="text-right mb-4">
-        <p className="font-semibold text-red-600">
-          Time Left: {formatTime(timer)}
-        </p>
-        <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
-          <div
-            className="h-2 bg-green-500 rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      </div>
+      {/* Timer (Sticky) */}
+<div className="sticky top-0 bg-white py-3 z-20 border-b border-gray-200">
+  <div className="text-right mb-1 px-2">
+    <p className="font-semibold text-red-600">
+      Time Left: {formatTime(timer)}
+    </p>
+  </div>
+  <div className="w-full bg-gray-200 h-2 rounded-full">
+    <div
+      className="h-2 bg-green-500 rounded-full transition-all duration-500"
+      style={{ width: `${progressPct}%` }}
+    />
+  </div>
+</div>
 
       {/* Questions */}
       {quiz.questions.map((q, index) => (

@@ -27,6 +27,12 @@ export default function QuizResult() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const username = state?.studentName || user.username;
   const avatar = state?.avatar || user.avatar;
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+  const avatarSrc =
+    avatar?.startsWith("http") && avatar
+      ? avatar
+      : `${API_BASE}${avatar || "/avatars/avatar1.png"}`;
 
   if (!details) {
     return (
@@ -51,10 +57,16 @@ export default function QuizResult() {
     const clone = element.cloneNode(true);
     clone.id = "pdf-clone";
 
-    // ❌ Remove chart & buttons (exclude from PDF)
-    clone.querySelectorAll("button, .no-print, .hide-on-pdf").forEach((el) => el.remove());
+    clone.querySelectorAll("button, .no-print, .hide-on-pdf").forEach((el) =>
+      el.remove()
+    );
 
-    // ✅ Add a simple neutral header
+    // ✅ Ensure avatar uses absolute URL for PDF
+    clone.querySelectorAll("img").forEach((img) => {
+      if (img.src.startsWith("http://localhost"))
+        img.src = `${API_BASE}${img.src.replace("http://localhost:5000", "")}`;
+    });
+
     const header = document.createElement("div");
     header.innerHTML = `
       <div style="text-align:center;border-bottom:1px solid #ccc;padding:10px;margin-bottom:20px;">
@@ -63,18 +75,8 @@ export default function QuizResult() {
     `;
     clone.prepend(header);
 
-    // Neutral styling
-    clone.querySelectorAll("*").forEach((el) => {
-      el.style.color = "#000";
-      el.style.backgroundColor = "#fff";
-      el.style.borderColor = "#ccc";
-      el.style.boxShadow = "none";
-    });
-
-    // Hide off-screen
     clone.style.position = "absolute";
     clone.style.top = "-9999px";
-    clone.style.left = "0";
     clone.style.width = "800px";
     document.body.appendChild(clone);
 
@@ -83,8 +85,6 @@ export default function QuizResult() {
         scale: 2,
         backgroundColor: "#fff",
         useCORS: true,
-        logging: false,
-        windowWidth: 800,
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -93,7 +93,6 @@ export default function QuizResult() {
       const pageWidth = 210;
       const pageHeight = 295;
       const imgHeight = (canvas.height * pageWidth) / canvas.width;
-
       let heightLeft = imgHeight;
       let position = 0;
 
@@ -129,9 +128,13 @@ export default function QuizResult() {
           </h1>
           <div className="flex items-center gap-3 mt-2">
             <img
-              src={`http://localhost:5000${avatar}`}
+              src={avatarSrc}
               alt="avatar"
+              crossOrigin="anonymous"
               className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border"
+              onError={(e) =>
+                (e.target.src = `${API_BASE}/avatars/avatar1.png`)
+              }
             />
             <div>
               <p className="text-gray-800 font-semibold">
@@ -159,7 +162,7 @@ export default function QuizResult() {
         </button>
       </div>
 
-      {/* Main Content */}
+          {/* Main Content */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left - Questions */}
         <div className="flex-1 bg-gray-50 p-4 sm:p-5 rounded-lg shadow-inner overflow-y-auto">
