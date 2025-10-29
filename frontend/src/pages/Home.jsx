@@ -21,7 +21,7 @@ export default function Home() {
     >
       {/* Heading */}
       <motion.h1
-        className="mt-6 text-3xl md:text-6xl font-extrabold text-indigo-700 mb-4"
+        className="mt-10 text-2xl md:text-6xl font-extrabold text-indigo-700 mb-4"
         variants={fadeInUp}
       >
         Welcome to <span className="text-blue-600">QuizNova</span> ⚡
@@ -45,7 +45,7 @@ export default function Home() {
       <motion.img
         src="/assets/quiz-banner.svg"
         alt="QuizNova banner"
-        className="w-60 md:w-72 lg:w-80 mx-auto mb-8 opacity-95"
+        className="w-60 md:w-48 lg:w-60 mx-auto mb-8 opacity-95"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 1.1, ease: "easeOut" }}

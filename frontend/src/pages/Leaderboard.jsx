@@ -10,8 +10,9 @@ export default function Leaderboard() {
 
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-  
+  // Fetch quizzes
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
@@ -26,7 +27,7 @@ export default function Leaderboard() {
     fetchQuizzes();
   }, []);
 
-
+  // Fetch leaderboard
   const fetchLeaderboard = async (quizId) => {
     setLoading(true);
     try {
@@ -58,22 +59,21 @@ export default function Leaderboard() {
     else navigate("/student/dashboard");
   };
 
-  
-const getMedal = (rank) => {
-  const num = Number(rank); // convert string -> number
-  switch (num) {
-    case 1:
-      return "🥇";
-    case 2:
-      return "🥈";
-    case 3:
-      return "🥉";
-    default:
-      return `#${rank}`;
-  }
-};
+  // Rank medals
+  const getMedal = (rank) => {
+    const num = Number(rank);
+    switch (num) {
+      case 1:
+        return "🥇";
+      case 2:
+        return "🥈";
+      case 3:
+        return "🥉";
+      default:
+        return `#${rank}`;
+    }
+  };
 
- 
   const getRankColor = (rank) => {
     if (rank === 1) return "text-yellow-500 font-extrabold";
     if (rank === 2) return "text-gray-400 font-bold";
@@ -83,7 +83,7 @@ const getMedal = (rank) => {
 
   return (
     <div className="max-w-5xl mx-auto mt-10 bg-white p-8 rounded-2xl shadow-lg">
-      
+      {/* Back button */}
       <div className="flex justify-end">
         <button
           onClick={handleBack}
@@ -97,7 +97,7 @@ const getMedal = (rank) => {
         🏆 Leaderboard
       </h2>
 
-      
+      {/* Quiz selector */}
       <div className="flex justify-center mb-8">
         <select
           value={selectedQuiz}
@@ -113,7 +113,7 @@ const getMedal = (rank) => {
         </select>
       </div>
 
-     
+      {/* Leaderboard Table */}
       {loading ? (
         <p className="text-center text-gray-500">Loading leaderboard...</p>
       ) : leaderboard.length === 0 ? (
@@ -131,45 +131,54 @@ const getMedal = (rank) => {
               </tr>
             </thead>
             <tbody>
-              {leaderboard.map((entry, i) => (
-                <tr
-                  key={i}
-                  className="hover:bg-indigo-50 transition-transform duration-200 hover:scale-[1.01]"
-                >
-                 <td className={`border px-4 py-3 text-lg ${getRankColor(entry.rank)}`}>
-  {getMedal(entry.rank)}
-</td>
+              {leaderboard.map((entry, i) => {
+                // handle avatar URL dynamically for Render + Netlify
+                const avatarSrc = entry.student?.avatar
+                  ? entry.student.avatar.startsWith("http")
+                    ? entry.student.avatar
+                    : `${API_BASE}${entry.student.avatar}`
+                  : `${API_BASE}/avatars/default.png`;
 
-                  <td className="border px-4 py-2 flex items-center justify-center gap-3">
-                    <img
-                      src={
-                        entry.student?.avatar
-                          ? `http://localhost:5000${entry.student.avatar}`
-                          : "http://localhost:5000/avatars/default.png"
-                      }
-                      alt="avatar"
-                      className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200"
-                      onError={(e) =>
-                        (e.target.src =
-                          "http://localhost:5000/avatars/default.png")
-                      }
-                    />
-                    <span className="text-gray-800 font-semibold">
-                      {entry.student?.username || "Unknown"}
-                    </span>
-                  </td>
+                return (
+                  <tr
+                    key={i}
+                    className="hover:bg-indigo-50 transition-transform duration-200 hover:scale-[1.01]"
+                  >
+                    <td
+                      className={`border px-4 py-3 text-lg ${getRankColor(
+                        entry.rank
+                      )}`}
+                    >
+                      {getMedal(entry.rank)}
+                    </td>
 
-                  <td className="border px-4 py-2 text-green-700 font-semibold">
-                    {entry.bestScore || entry.averageScore}%
-                  </td>
-                </tr>
-              ))}
+                    <td className="border px-4 py-2 flex items-center justify-center gap-3">
+                      <img
+                        src={avatarSrc}
+                        alt="avatar"
+                        crossOrigin="anonymous"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200"
+                        onError={(e) =>
+                          (e.target.src = `${API_BASE}/avatars/default.png`)
+                        }
+                      />
+                      <span className="text-gray-800 font-semibold">
+                        {entry.student?.username || "Unknown"}
+                      </span>
+                    </td>
+
+                    <td className="border px-4 py-2 text-green-700 font-semibold">
+                      {entry.bestScore || entry.averageScore}%
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-    
+      {/* Footer */}
       <p className="text-center text-sm text-gray-500 mt-4 italic">
         🌟 Celebrating learning and growth through every quiz!
       </p>
