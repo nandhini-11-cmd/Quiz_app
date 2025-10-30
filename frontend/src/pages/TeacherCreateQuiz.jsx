@@ -102,11 +102,12 @@ export default function TeacherCreateQuiz() {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             className="border p-2 rounded w-full"
-          />
+          /> 
           <input
             type="number"
             min="1"
             max="10"
+            placeholder="Enter number of questions to generate"
             value={numQuestions}
             onChange={(e) => setNumQuestions(e.target.value)}
             className="border p-2 rounded w-24"
