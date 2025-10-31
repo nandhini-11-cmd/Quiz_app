@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 export default function Home() {
-  // ✨ Animation variants for smoother transitions
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
@@ -37,7 +36,6 @@ export default function Home() {
         <p className="font-semibold text-indigo-700 text-2xl sm:text-3xl md:text-4xl mb-2">
           “Where Curiosity Meets AI”
         </p>
-       
         <p className="text-blue-600 font-semibold sm:text-lg mt-3">
           Learning becomes engaging, insightful, and full of discovery.
         </p>
@@ -47,15 +45,15 @@ export default function Home() {
       <motion.img
         src="/assets/quiz-banner.svg"
         alt="QuizNova banner"
-        className="w-56  md:w-64 lg:w-68 mx-auto mb-8 opacity-95"
+        className="w-56 md:w-64 lg:w-68 mx-auto mb-8 opacity-95"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 1.1, ease: "easeOut" }}
       />
 
-      {/* Action Buttons */}
+      {/* Buttons */}
       <motion.div
-        className="flex flex-wrap gap-4 justify-center mt-4"
+        className="flex flex-wrap gap-4 justify-center mt-4 relative z-10"
         variants={fadeIn}
         transition={{ delay: 0.6 }}
       >
@@ -78,20 +76,20 @@ export default function Home() {
         </Link>
       </motion.div>
 
-      {/* Floating Accent Circles */}
+      {/* Floating Accent Circles - FIXED */}
       <motion.div
         className="absolute bottom-10 right-10 w-28 sm:w-32 h-28 sm:h-32 
                    bg-blue-200 rounded-full mix-blend-multiply 
-                   blur-2xl opacity-30"
+                   blur-2xl opacity-30 pointer-events-none"
         animate={{ y: [0, -10, 0] }}
-        transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+        transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
       />
       <motion.div
         className="absolute top-16 left-10 w-24 sm:w-28 h-24 sm:h-28 
                    bg-indigo-200 rounded-full mix-blend-multiply 
-                   blur-2xl opacity-30"
+                   blur-2xl opacity-30 pointer-events-none"
         animate={{ y: [0, 10, 0] }}
-        transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }}
+        transition={{ repeat: Infinity, duration: 7, ease: 'easeInOut' }}
       />
     </motion.div>
   );
