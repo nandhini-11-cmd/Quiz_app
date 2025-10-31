@@ -15,16 +15,14 @@ const Navbar = ({ user, setUser }) => {
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
-  // ✅ Get API base for avatar URLs
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-  // ✅ Build avatar image safely
   const avatarSrc =
     user?.avatar?.startsWith("http") && user?.avatar
       ? user.avatar
       : user?.avatar
       ? `${API_BASE}${user.avatar}`
-      : `${API_BASE}/avatars/avatar1.png`; // fallback default avatar
+      : `${API_BASE}/avatars/avatar1.png`;
 
   return (
     <nav className="bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 text-white shadow-md sticky top-0 z-50">
@@ -71,17 +69,18 @@ const NavLinks = ({ user, handleLogout, onNavigate, isMobile }) => (
   <>
     <NavItem to="/about" label="About" onClick={onNavigate} />
 
-    <NavItem
-      to={
-        user
-          ? user.role === "teacher"
+    {/* ✅ Dashboard visible only after login */}
+    {user && (
+      <NavItem
+        to={
+          user.role === "teacher"
             ? "/teacher/dashboard"
             : "/student/dashboard"
-          : "/"
-      }
-      label="Dashboard"
-      onClick={onNavigate}
-    />
+        }
+        label="Dashboard"
+        onClick={onNavigate}
+      />
+    )}
 
     {!user ? (
       <>
@@ -104,7 +103,6 @@ const NavLinks = ({ user, handleLogout, onNavigate, isMobile }) => (
           </button>
         </div>
 
-        {/* ✅ Avatar + Username */}
         {user?.avatar && (
           <div className="flex flex-col md:flex-row justify-center items-center gap-2 mt-3 md:mt-0 group">
             <img
@@ -116,7 +114,7 @@ const NavLinks = ({ user, handleLogout, onNavigate, isMobile }) => (
               alt="avatar"
               className="w-10 h-10 rounded-full border-2 border-white shadow-md group-hover:scale-110 transition duration-300"
               onError={(e) => {
-                e.target.src = `${import.meta.env.VITE_API_BASE_URL}/avatars/avatar1.png`; // fallback if broken
+                e.target.src = `${import.meta.env.VITE_API_BASE_URL}/avatars/avatar1.png`;
               }}
             />
 
@@ -130,7 +128,7 @@ const NavLinks = ({ user, handleLogout, onNavigate, isMobile }) => (
   </>
 );
 
-// ✅ NavItem for reusable menu links
+// ✅ Reusable Nav Item
 const NavItem = ({ to, label, onClick }) => (
   <div className="py-1">
     <Link
