@@ -12,7 +12,8 @@ export default function TakeQuiz() {
   const [timerTotal, setTimerTotal] = useState(null);
   const [started, setStarted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [timeUp, setTimeUp] = useState(false); // ✅ new state
+  const [timeUp, setTimeUp] = useState(false);
+  const [showWarning, setShowWarning] = useState(false); 
 
   // Format MM:SS
   const formatTime = (secs) => {
@@ -45,13 +46,11 @@ export default function TakeQuiz() {
   // Countdown
   useEffect(() => {
     if (!started || timer === null) return;
-
     if (timer <= 0) {
       setStarted(false);
-      setTimeUp(true); // ✅ trigger popup
+      setTimeUp(true);
       return;
     }
-
     const countdown = setInterval(() => setTimer((prev) => prev - 1), 1000);
     return () => clearInterval(countdown);
   }, [started, timer]);
@@ -64,16 +63,25 @@ export default function TakeQuiz() {
     }
   }, [timeUp]);
 
-  // Option select
+  // Handle option select
   const handleSelect = (qId, option) => {
     setAnswers((prev) => ({ ...prev, [qId]: option }));
   };
 
-  // Submit
+  // Submit handler with validation
   const handleSubmit = async (autoSubmit = false) => {
     if (submitting) return;
-    setSubmitting(true);
 
+    //  Check for unanswered questions before submission
+    const totalQuestions = quiz?.questions?.length || 0;
+    const answeredCount = Object.keys(answers).length;
+
+    if (!autoSubmit && answeredCount < totalQuestions) {
+      setShowWarning(true); // Show popup
+      return; // Stop submission
+    }
+
+    setSubmitting(true);
     try {
       const formattedAnswers = Object.entries(answers).map(
         ([questionId, answer]) => ({ questionId, answer })
@@ -120,7 +128,7 @@ export default function TakeQuiz() {
       : 100;
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 bg-white p-6 rounded-xl shadow-lg">
+    <div className="max-w-3xl mx-auto mt-10 bg-white p-6 rounded-xl shadow-lg relative">
       {/* Back */}
       <div className="flex justify-end">
         <button
@@ -182,7 +190,7 @@ export default function TakeQuiz() {
         ))}
       </div>
 
-      {/* Submit */}
+      {/* Submit Button */}
       <button
         onClick={() => handleSubmit(false)}
         disabled={submitting}
@@ -218,6 +226,24 @@ export default function TakeQuiz() {
           "Submit Quiz"
         )}
       </button>
+
+      {/* ⚠️ Unanswered Questions Warning Popup */}
+      {showWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg text-center max-w-sm">
+            <h2 className="text-xl font-bold text-yellow-600 mb-3">⚠️ Warning</h2>
+            <p className="text-gray-700 mb-4">
+              Please answer all the questions before submitting the quiz.
+            </p>
+            <button
+              onClick={() => setShowWarning(false)}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg font-semibold"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ⏰ Time-up Popup */}
       {timeUp && !submitting && (
