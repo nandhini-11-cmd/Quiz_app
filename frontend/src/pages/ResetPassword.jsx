@@ -29,6 +29,7 @@ export default function ResetPassword() {
       setSubmitting(false);
     }
   };
+  console.log("Reset token:", useParams());
 
   return (
     <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded-xl shadow-lg">
