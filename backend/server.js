@@ -15,7 +15,8 @@ connectDB();
 const app = express();
 const allowedOrigins = [
   "http://localhost:5173",                     
-  "https://quiznova-ai-powered.netlify.app",   
+  "https://quiznova-ai-powered.netlify.app",
+  "https://quiz-app-s484.onrender.com/", 
 ];
 
 app.use(

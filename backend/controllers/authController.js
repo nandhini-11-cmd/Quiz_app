@@ -91,38 +91,49 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// Forgot Password (Request reset email)
+// controllers/authController.js (forgotPassword)
 export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
-  const user = await User.findOne({ email });
-  if (!user) return res.status(404).json({ message: "No user with that email" });
-
-  const resetToken = user.getResetPasswordToken();
-  await user.save({ validateBeforeSave: false });
-
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-  const message = `
-    <p>Hello ${user.username},</p>
-    <p>Click below to reset your password:</p>
-    <a href="${resetUrl}" target="_blank">Reset Password</a>
-    <p>This link will expire in 10 minutes.</p>
-  `;
-
   try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "No user with that email" });
+
+    const resetToken = user.getResetPasswordToken();
+    await user.save({ validateBeforeSave: false });
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const message = `
+      <p>Hello ${user.username},</p>
+      <p>Click below to reset your password (valid for 10 minutes):</p>
+      <p><a href="${resetUrl}" target="_blank" rel="noreferrer">Reset Password</a></p>
+    `;
+
     await sendEmail({
       to: user.email,
-      subject: "Password Reset - Quiz App",
+      subject: "Password Reset - QuizNova",
       html: message,
     });
 
-    res.json({ message: "Email sent successfully!" });
+    return res.json({ message: "Email sent successfully!" });
   } catch (err) {
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save({ validateBeforeSave: false });
-    res.status(500).json({ message: "Email could not be sent" });
+    console.error("[FORGOT] Error:", err?.message || err);
+
+    // rollback token if email failed
+    try {
+      if (req.body?.email) {
+        const u = await User.findOne({ email: req.body.email });
+        if (u) {
+          u.resetPasswordToken = undefined;
+          u.resetPasswordExpire = undefined;
+          await u.save({ validateBeforeSave: false });
+        }
+      }
+    } catch {}
+
+    return res.status(500).json({ message: "Email could not be sent" });
   }
 };
+
 
 // Reset Password (Change it)
 export const resetPassword = async (req, res) => {

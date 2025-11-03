@@ -1,19 +1,30 @@
+// utils/sendEmail.js
 import nodemailer from "nodemailer";
 
-export const sendEmail = async (options) => {
+export const sendEmail = async ({ to, subject, html }) => {
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,          
+    secure: true,
     auth: {
-      user: process.env.EMAIL_USER, 
-      pass: process.env.EMAIL_PASS, 
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 
+  
+  try {
+    await transporter.verify();
+    console.log("[MAIL] SMTP verified OK");
+  } catch (e) {
+    console.error("[MAIL] SMTP verify failed:", e?.message || e);
+  }
+
   const mailOptions = {
-    from: `"Quiz App Support" <${process.env.EMAIL_USER}>`,
-    to: options.to,
-    subject: options.subject,
-    html: options.html,
+    from: `"QuizNova Support" <${process.env.EMAIL_USER}>`, 
+    to,
+    subject,
+    html,
   };
 
   await transporter.sendMail(mailOptions);
