@@ -1,36 +1,30 @@
+// backend/utils/sendEmail.js
 import axios from "axios";
-import dotenv from "dotenv";
-dotenv.config();
-
 
 export const sendEmail = async (options) => {
   try {
-    const payload = {
-      sender: {
-        name: "QuizNova Support",
-        email: process.env.EMAIL_USER, // must be verified in Brevo
-      },
-      to: [{ email: options.to }],
-      subject: options.subject,
-      htmlContent: options.html,
-    };
-
-    const res = await axios.post(
+    const response = await axios.post(
       "https://api.brevo.com/v3/smtp/email",
-      payload,
+      {
+        sender: {
+          name: "QuizNova Support",
+          email: process.env.EMAIL_USER, // Your registered Brevo email
+        },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent: options.html,
+      },
       {
         headers: {
-          "api-key": process.env.BREVO_API_KEY,
+          "api-key": process.env.BREVO_API_KEY,  // ✅ MUST MATCH .env name
           "Content-Type": "application/json",
         },
-        timeout: 15000,
       }
     );
 
-    console.log(`[MAIL] Brevo email sent to: ${options.to}`, res.data.messageId || "");
-    return true;
-  } catch (err) {
-    console.error("[MAIL] Brevo API failed:", err.response?.data || err.message);
+    console.log("[MAIL] Brevo email sent:", response.data.messageId || "✅ Success");
+  } catch (error) {
+    console.error("[MAIL] Brevo API failed:", error.response?.data || error.message);
     throw new Error("Email sending failed via Brevo API");
   }
 };

@@ -102,6 +102,7 @@ export const forgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    
     const message = `
       <p>Hello ${user.username},</p>
       <p>Click below to reset your password (valid for 10 minutes):</p>

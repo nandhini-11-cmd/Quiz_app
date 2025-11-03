@@ -73,12 +73,15 @@ export default function ResetPassword() {
             </div>
 
             <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700"
-            >
-              {isSubmitting ? "Resetting..." : "Reset Password"}
-            </button>
+  type="submit"
+  disabled={isSubmitting}
+  className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 transition"
+>
+  {isSubmitting ? "Resetting..." : "Reset Password"}
+</button>
+<p className="text-gray-500 text-sm text-center mt-2">
+  You’ll be redirected to login after successful reset.
+</p>
           </Form>
         )}
       </Formik>
