@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export default function About() {
   // ✅ Define reusable variants for smooth stagger animation
@@ -7,6 +8,10 @@ export default function About() {
     visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
   };
 
+   const fadeIn = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 1, ease: "easeOut" } },
+  };
   const container = {
     hidden: {},
     visible: { transition: { staggerChildren: 0.15, delayChildren: 0.2 } },
@@ -112,6 +117,31 @@ export default function About() {
         </span>{" "}
         and making every question a step toward excellence.
       </motion.p>
+       {/* Buttons */}
+      <motion.div
+        className="flex flex-wrap gap-4 justify-center mt-10 relative z-10 "
+        variants={fadeIn}
+        transition={{ delay: 0.6 }}
+      >
+        <Link
+          to="/register"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 
+                     rounded-xl font-semibold shadow-md 
+                     transition-transform duration-300 hover:scale-105 w-40 sm:w-auto"
+        >
+          Register
+        </Link>
+
+        <Link
+          to="/login"
+          className="border border-indigo-600 text-indigo-700 px-8 py-3 
+                     rounded-xl font-semibold shadow-md 
+                     hover:bg-indigo-50 transition-transform duration-300 hover:scale-105 w-40 sm:w-auto"
+        >
+           Login
+        </Link>
+      </motion.div>
     </motion.div>
+    
   );
 }

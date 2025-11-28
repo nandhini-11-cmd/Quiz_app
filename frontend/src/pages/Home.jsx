@@ -53,12 +53,12 @@ export default function Home() {
 
       {/* Buttons */}
       <motion.div
-        className="flex flex-wrap gap-4 justify-center mt-4 relative z-10"
+        className="flex flex-wrap gap-4 justify-center mt-1 relative z-10"
         variants={fadeIn}
         transition={{ delay: 0.6 }}
       >
         <Link
-          to="/register"
+          to="/about"
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 
                      rounded-xl font-semibold shadow-md 
                      transition-transform duration-300 hover:scale-105 w-40 sm:w-auto"
@@ -66,14 +66,7 @@ export default function Home() {
           🚀 Get Started
         </Link>
 
-        <Link
-          to="/login"
-          className="border border-indigo-600 text-indigo-700 px-8 py-3 
-                     rounded-xl font-semibold shadow-md 
-                     hover:bg-indigo-50 transition-transform duration-300 hover:scale-105 w-40 sm:w-auto"
-        >
-          🎓 Login
-        </Link>
+        
       </motion.div>
 
       {/* Floating Accent Circles - FIXED */}
