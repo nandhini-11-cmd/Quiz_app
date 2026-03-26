@@ -58,6 +58,7 @@ app.use("/api/upload", uploadRoutes);
 app.get("/", (req, res) => {
   res.send("✅ Quiz App backend is running fine!");
 });
+app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
