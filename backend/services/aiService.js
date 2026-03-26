@@ -5,75 +5,69 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 
+// ─── Startup Diagnostics ─────────────────────────────────────────────────────
 console.log("=== [AI SERVICE INITIALIZED] ===");
-console.log("AI Provider:", process.env.AI_PROVIDER || "auto");
-console.log("HF Key exists:", !!process.env.HF_API_KEY);
-console.log("OpenAI Key exists:", !!process.env.OPENAI_API_KEY);
-console.log("Gemini Key exists:", !!process.env.GEMINI_API_KEY);
+console.log("AI_PROVIDER:", process.env.AI_PROVIDER || "auto");
+console.log("GEMINI_API_KEY exists:", !!process.env.GEMINI_API_KEY);
+console.log("GEMINI_API_KEY length:", process.env.GEMINI_API_KEY?.length || 0);
+// Log first+last chars to verify key is complete (not truncated)
+const gKey = process.env.GEMINI_API_KEY || "";
+if (gKey) console.log("GEMINI_API_KEY preview:", gKey.slice(0, 8) + "..." + gKey.slice(-4));
+console.log("OPENAI_API_KEY exists:", !!process.env.OPENAI_API_KEY);
+console.log("HF_API_KEY exists:", !!process.env.HF_API_KEY);
 
-// ─── OpenAI Setup ────────────────────────────────────────────────────────────
+// ─── Provider Setup ───────────────────────────────────────────────────────────
 let openai = null;
 if (process.env.OPENAI_API_KEY) {
   openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
 
-// ─── Gemini Setup ────────────────────────────────────────────────────────────
 let genAI = null;
 if (process.env.GEMINI_API_KEY) {
   genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  console.log("[AI] Gemini client initialized");
+} else {
+  console.warn("[AI] Gemini NOT initialized — GEMINI_API_KEY missing");
 }
 
 const HF_KEY = process.env.HF_API_KEY;
 
-// ─── In-Memory Cache (clears after 1 hour) ───────────────────────────────────
+// ✅ Read AI_PROVIDER env var — respect user's explicit choice
+// Values: "gemini" | "openai" | "huggingface" | "auto"
+const PROVIDER = (process.env.AI_PROVIDER || "auto").toLowerCase();
+console.log("[AI] Active provider strategy:", PROVIDER);
+
+// ─── In-Memory Cache ──────────────────────────────────────────────────────────
 const questionCache = new Map();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ─── Sleep Helper ────────────────────────────────────────────────────────────
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// ─── Fallback Questions ──────────────────────────────────────────────────────
+// ─── Fallback Questions ───────────────────────────────────────────────────────
 const sampleQuestions = (topic, n = 5) => {
-  console.log("[AI DEBUG] Returning fallback questions for topic:", topic);
+  console.warn("[AI] Using FALLBACK questions for topic:", topic);
   return Array.from({ length: n }).map((_, i) => ({
     questionText: `${topic} - Sample Question ${i + 1}: What is a key concept?`,
-    options: [
-      "Foundational Principle",
-      "Unrelated Concept",
-      "Incorrect Term",
-      "Random Option",
-    ],
+    options: ["Foundational Principle", "Unrelated Concept", "Incorrect Term", "Random Option"],
     correctAnswer: "Foundational Principle",
   }));
 };
 
-// ─── JSON Parser (robust) ────────────────────────────────────────────────────
+// ─── JSON Parser ──────────────────────────────────────────────────────────────
 const parseJSONSafe = (text) => {
   if (!text) return null;
-
-  // Remove markdown code fences
   const cleaned = text.replace(/```(json)?/gi, "").trim();
-
-  // Try direct parse first
-  try {
-    return JSON.parse(cleaned);
-  } catch {}
-
-  // Try extracting JSON array/object from text
-  const start = Math.min(
-    ...[cleaned.indexOf("["), cleaned.indexOf("{")].filter((i) => i >= 0)
-  );
+  try { return JSON.parse(cleaned); } catch {}
+  const start = Math.min(...[cleaned.indexOf("["), cleaned.indexOf("{")].filter((i) => i >= 0));
   const end = Math.max(cleaned.lastIndexOf("]"), cleaned.lastIndexOf("}"));
   if (start >= 0 && end > start) {
-    try {
-      return JSON.parse(cleaned.slice(start, end + 1));
-    } catch {}
+    try { return JSON.parse(cleaned.slice(start, end + 1)); } catch {}
   }
   return null;
 };
 
-// ─── OpenAI Generator ────────────────────────────────────────────────────────
+// ─── OpenAI Generator ─────────────────────────────────────────────────────────
 const generateWithOpenAI = async (prompt) => {
-  if (!openai) throw new Error("OpenAI not configured");
+  if (!openai) throw new Error("OpenAI not configured — no OPENAI_API_KEY");
+  console.log("[AI] Calling OpenAI gpt-4o-mini...");
   const resp = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
@@ -82,203 +76,157 @@ const generateWithOpenAI = async (prompt) => {
   return resp.choices?.[0]?.message?.content || "";
 };
 
-// ─── Gemini Generator (FREE TIER: gemini-1.5-flash with retry) ───────────────
+// ─── Gemini Generator (gemini-1.5-flash — free tier) ─────────────────────────
 const generateWithGemini = async (prompt, retries = 3) => {
-  if (!genAI) throw new Error("Gemini not configured");
+  if (!genAI) throw new Error("Gemini not configured — no GEMINI_API_KEY");
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`[AI] Gemini attempt ${attempt}/${retries} using gemini-1.5-flash`);
-
-      // ✅ FIXED: Use gemini-1.5-flash (free tier supported model)
-      // gemini-2.5-pro requires a paid billing account
+      console.log(`[AI] Gemini attempt ${attempt}/${retries} — model: gemini-1.5-flash`);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
       const result = await model.generateContent(prompt);
       const text = result.response.text();
 
-      if (!text || text.trim().length === 0) {
-        throw new Error("Empty response from Gemini");
-      }
+      if (!text || text.trim().length === 0) throw new Error("Empty response from Gemini");
 
-      console.log("[AI] Gemini responded successfully");
+      console.log("[AI] Gemini responded successfully. Length:", text.length);
       return text;
 
     } catch (error) {
       const msg = error.message || "";
-      console.warn(`[AI] Gemini attempt ${attempt} failed:`, msg);
+      console.error(`[AI] Gemini attempt ${attempt} FAILED:`, msg);
 
-      // Rate limit (429) → wait and retry
+      // Quota/rate limit
       if (msg.includes("429") || msg.includes("quota") || msg.includes("RESOURCE_EXHAUSTED")) {
         if (attempt < retries) {
-          const waitTime = attempt * 3000; // 3s, 6s, 9s
-          console.log(`[AI] Rate limited. Waiting ${waitTime / 1000}s before retry...`);
-          await sleep(waitTime);
+          const wait = attempt * 3000;
+          console.log(`[AI] Rate limited. Waiting ${wait / 1000}s...`);
+          await sleep(wait);
           continue;
         }
       }
 
-      // Last attempt → throw
+      // Invalid API key
+      if (msg.includes("API_KEY_INVALID") || msg.includes("400")) {
+        console.error("[AI] GEMINI_API_KEY is INVALID. Regenerate at: https://aistudio.google.com/app/apikey");
+        throw new Error("Gemini API key is invalid");
+      }
+
       if (attempt === retries) throw error;
     }
   }
 };
 
-// ─── Hugging Face Generator ──────────────────────────────────────────────────
+// ─── Hugging Face Generator ───────────────────────────────────────────────────
 const HF_MODELS = [
   "mistralai/Mistral-7B-Instruct-v0.2",
   "meta-llama/Meta-Llama-3-8B-Instruct",
-  "google/gemma-7b-it",
   "HuggingFaceH4/zephyr-7b-beta",
 ];
 
 const generateWithHuggingFace = async (prompt) => {
-  if (!HF_KEY) throw new Error("Hugging Face not configured");
+  if (!HF_KEY) throw new Error("Hugging Face not configured — no HF_API_KEY");
 
   let lastError = "";
   for (const model of HF_MODELS) {
-    const url = `https://api-inference.huggingface.co/models/${model}`;
-    console.log(`[AI] Trying Hugging Face model: ${model}`);
-
+    console.log(`[AI] Trying HuggingFace model: ${model}`);
     try {
-      const res = await fetch(url, {
+      const res = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${HF_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({ inputs: prompt }),
       });
-
       const text = await res.text();
-      if (!res.ok) {
-        lastError = text;
-        console.log(`[AI] HF model ${model} failed: ${text.slice(0, 200)}`);
-        continue;
-      }
-
-      console.log("[AI DEBUG] HF Raw Output:", text.slice(0, 500));
-
-      const hfResponse = parseJSONSafe(text);
-      const generatedText = Array.isArray(hfResponse)
-        ? hfResponse[0]?.generated_text  // ✅ FIXED: was hfResponse?.generated_text (wrong)
-        : null;
-
-      if (generatedText) return generatedText;
+      if (!res.ok) { lastError = text; continue; }
+      const parsed = parseJSONSafe(text);
+      const generated = Array.isArray(parsed) ? parsed[0]?.generated_text : null;
+      if (generated) return generated;
       return text;
-
     } catch (err) {
-      console.warn("[AI] HF error:", err.message);
       lastError = err.message;
     }
   }
-  throw new Error("All Hugging Face models failed. " + lastError);
+  throw new Error("All HuggingFace models failed: " + lastError);
+};
+
+// ─── Provider Order based on AI_PROVIDER env ─────────────────────────────────
+// ✅ If AI_PROVIDER=gemini → only try Gemini, no fallback to others
+// ✅ If AI_PROVIDER=auto  → try gemini first, then openai, then hf
+const getProviderOrder = () => {
+  if (PROVIDER === "gemini")      return ["gemini"];
+  if (PROVIDER === "openai")      return ["openai"];
+  if (PROVIDER === "huggingface") return ["huggingface"];
+  return ["gemini", "openai", "huggingface"]; // auto
+};
+
+const callProvider = async (providerName, prompt) => {
+  switch (providerName) {
+    case "gemini":      return await generateWithGemini(prompt);
+    case "openai":      return await generateWithOpenAI(prompt);
+    case "huggingface": return await generateWithHuggingFace(prompt);
+    default: throw new Error("Unknown provider: " + providerName);
+  }
 };
 
 // ─── Main: Generate Quiz Questions ───────────────────────────────────────────
 export const generateQuizQuestions = async (topic, numQuestions = 5) => {
-  // Check cache first
   const cacheKey = `quiz_${topic}_${numQuestions}`;
   if (questionCache.has(cacheKey)) {
-    console.log("[AI] Returning cached questions for:", cacheKey);
+    console.log("[AI] Cache hit for:", cacheKey);
     return questionCache.get(cacheKey);
   }
 
   const prompt = `Generate ${numQuestions} multiple-choice quiz questions on the topic: "${topic}".
 Each question must have exactly 4 options and a correctAnswer that exactly matches one of the options.
-Return ONLY valid JSON array (no markdown, no commentary, no code blocks). Format:
+Return ONLY a valid JSON array. No markdown, no explanation, no code blocks. Format:
 [
   {"questionText":"...","options":["Option A","Option B","Option C","Option D"],"correctAnswer":"Option A"}
 ]`;
 
+  const providers = getProviderOrder();
+  console.log("[AI] Provider order for this request:", providers);
+
   let text = "";
-
-  // 1. Try OpenAI
-  if (openai) {
-    console.log("[AI] Trying OpenAI...");
+  for (const provider of providers) {
     try {
-      text = await generateWithOpenAI(prompt);
-      console.log("[AI] ✅ OpenAI succeeded");
+      text = await callProvider(provider, prompt);
+      if (text) {
+        console.log(`[AI] Provider "${provider}" succeeded`);
+        break;
+      }
     } catch (e) {
-      console.warn("[AI] OpenAI failed:", e.message);
+      console.warn(`[AI] Provider "${provider}" failed:`, e.message);
     }
   }
 
-  // 2. Try Gemini (free tier: gemini-1.5-flash)
-  if (!text && genAI) {
-    console.log("[AI] Trying Gemini (gemini-1.5-flash)...");
-    try {
-      text = await generateWithGemini(prompt);
-      console.log("[AI] ✅ Gemini succeeded");
-    } catch (e) {
-      console.warn("[AI] Gemini failed:", e.message);
-    }
-  }
-
-  // 3. Try Hugging Face
-  if (!text && HF_KEY) {
-    console.log("[AI] Trying Hugging Face...");
-    try {
-      text = await generateWithHuggingFace(prompt);
-      console.log("[AI] ✅ Hugging Face succeeded");
-    } catch (e) {
-      console.warn("[AI] Hugging Face failed:", e.message);
-    }
-  }
-
-  // Parse and validate
   const parsed = parseJSONSafe(text);
   if (Array.isArray(parsed) && parsed.length > 0) {
-    console.log(`[AI] ✅ Parsed ${parsed.length} valid questions`);
-
-    // Cache result for 1 hour
+    console.log(`[AI] Successfully parsed ${parsed.length} questions`);
     questionCache.set(cacheKey, parsed);
-    setTimeout(() => {
-      questionCache.delete(cacheKey);
-      console.log("[AI] Cache cleared for:", cacheKey);
-    }, 60 * 60 * 1000);
-
+    setTimeout(() => questionCache.delete(cacheKey), 60 * 60 * 1000);
     return parsed;
   }
 
-  console.warn("[AI] ❌ All providers failed or returned invalid JSON. Using fallback.");
+  console.error("[AI] All providers failed. Raw text:", text?.slice(0, 300));
   return sampleQuestions(topic, numQuestions);
 };
 
-// ─── Generate Explanation ────────────────────────────────────────────────────
+// ─── Generate Explanation ─────────────────────────────────────────────────────
 export const generateExplanation = async (question, correctAnswer) => {
-  // Check cache
   const cacheKey = `explain_${question.slice(0, 50)}`;
-  if (questionCache.has(cacheKey)) {
-    return questionCache.get(cacheKey);
-  }
+  if (questionCache.has(cacheKey)) return questionCache.get(cacheKey);
 
-  const prompt = `Explain briefly and clearly why "${correctAnswer}" is the correct answer to: "${question}".
-Keep it under 2 sentences. Return plain text only, no markdown or code fences.`;
+  const prompt = `Explain briefly and clearly why "${correctAnswer}" is the correct answer to: "${question}". Keep it under 2 sentences. Return plain text only.`;
 
+  const providers = getProviderOrder();
   let text = "";
 
-  if (openai) {
+  for (const provider of providers) {
     try {
-      text = await generateWithOpenAI(prompt);
+      text = await callProvider(provider, prompt);
+      if (text) break;
     } catch (e) {
-      console.warn("[AI] OpenAI failed (explain):", e.message);
-    }
-  }
-
-  if (!text && genAI) {
-    try {
-      text = await generateWithGemini(prompt);
-    } catch (e) {
-      console.warn("[AI] Gemini failed (explain):", e.message);
-    }
-  }
-
-  if (!text && HF_KEY) {
-    try {
-      text = await generateWithHuggingFace(prompt);
-    } catch (e) {
-      console.warn("[AI] Hugging Face failed (explain):", e.message);
+      console.warn(`[AI] Explanation "${provider}" failed:`, e.message);
     }
   }
 
@@ -286,9 +234,7 @@ Keep it under 2 sentences. Return plain text only, no markdown or code fences.`;
     ? text.trim()
     : `The correct answer is "${correctAnswer}" because it best matches the concept in the question.`;
 
-  // Cache explanation for 1 hour
   questionCache.set(cacheKey, result);
   setTimeout(() => questionCache.delete(cacheKey), 60 * 60 * 1000);
-
   return result;
 };
