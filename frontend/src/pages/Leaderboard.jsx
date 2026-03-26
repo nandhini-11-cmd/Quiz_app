@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../utils/axios";
 import { useNavigate } from "react-router-dom";
+import UserAvatar from "../components/UserAvatar"; // ✅ Import UserAvatar
 
 export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -10,7 +11,6 @@ export default function Leaderboard() {
 
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   // Fetch quizzes
   useEffect(() => {
@@ -60,24 +60,19 @@ export default function Leaderboard() {
   };
 
   // Rank medals
-  const getMedal = (rank) => {
-    const num = Number(rank);
-    switch (num) {
-      case 1:
-        return "🥇";
-      case 2:
-        return "🥈";
-      case 3:
-        return "🥉";
-      default:
-        return `#${rank}`;
+  const getMedal = (rankNum) => {
+    switch (rankNum) {
+      case 1: return "🥇";
+      case 2: return "🥈";
+      case 3: return "🥉";
+      default: return `#${rankNum}`;
     }
   };
 
-  const getRankColor = (rank) => {
-    if (rank === 1) return "text-yellow-500 font-extrabold";
-    if (rank === 2) return "text-gray-400 font-bold";
-    if (rank === 3) return "text-amber-700 font-bold";
+  const getRankColor = (rankNum) => {
+    if (rankNum === 1) return "text-yellow-500 font-extrabold";
+    if (rankNum === 2) return "text-gray-400 font-bold";
+    if (rankNum === 3) return "text-amber-700 font-bold";
     return "text-blue-700";
   };
 
@@ -132,43 +127,34 @@ export default function Leaderboard() {
             </thead>
             <tbody>
               {leaderboard.map((entry, i) => {
-                // handle avatar URL dynamically for Render + Netlify
-                const avatarSrc = entry.student?.avatar
-                  ? entry.student.avatar.startsWith("http")
-                    ? entry.student.avatar
-                    : `${API_BASE}${entry.student.avatar}`
-                  : `${API_BASE}/avatars/default.png`;
+                // ✅ Use rankNumber (number) for color/medal logic
+                const rankNum = entry.rankNumber ?? i + 1;
 
                 return (
                   <tr
                     key={i}
                     className="hover:bg-indigo-50 transition-transform duration-200 hover:scale-[1.01]"
                   >
-                    <td
-                      className={`border px-4 py-3 text-lg ${getRankColor(
-                        entry.rank
-                      )}`}
-                    >
-                      {getMedal(entry.rank)}
+                    <td className={`border px-4 py-3 text-lg ${getRankColor(rankNum)}`}>
+                      {getMedal(rankNum)}
                     </td>
 
-                    <td className="border px-4 py-2 flex items-center justify-center gap-3">
-                      <img
-                        src={avatarSrc}
-                        alt="avatar"
-                        crossOrigin="anonymous"
-                        className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200"
-                        onError={(e) =>
-                          (e.target.src = `${API_BASE}/avatars/default.png`)
-                        }
-                      />
-                      <span className="text-gray-800 font-semibold">
-                        {entry.student?.username || "Unknown"}
-                      </span>
+                    <td className="border px-4 py-2">
+                      <div className="flex items-center justify-center gap-3">
+                        {/* ✅ FIXED: Replaced broken <img> with UserAvatar — no more infinite loop */}
+                        <UserAvatar
+                          username={entry.student?.username}
+                          avatar={entry.student?.avatar}
+                          size={40}
+                        />
+                        <span className="text-gray-800 font-semibold">
+                          {entry.student?.username || "Unknown"}
+                        </span>
+                      </div>
                     </td>
 
                     <td className="border px-4 py-2 text-green-700 font-semibold">
-                      {entry.bestScore || entry.averageScore}%
+                      {entry.bestScore ?? entry.averageScore}%
                     </td>
                   </tr>
                 );
