@@ -6,6 +6,7 @@ import authRoutes from "./routes/authRoutes.js";
 import quizRoutes from "./routes/quizRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
+import { startSelfPing } from "./utils/selfPing.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import path from "path";
 
@@ -62,4 +63,7 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  startSelfPing(); // ✅ Backend pings itself every 14 min — never sleeps
+});
