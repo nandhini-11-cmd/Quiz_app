@@ -17,6 +17,7 @@ import QuizResult from "./pages/QuizResult";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ViewQuiz from "./pages/ViewQuiz";
+import { startKeepAlive } from "./utils/keepAlive";
 
 
 
@@ -36,6 +37,7 @@ export default function App() {
       }
     }
   }, []);
+  useEffect(() => { startKeepAlive(); }, []);
 
   return (
     <>
