@@ -24,11 +24,20 @@ if (process.env.OPENAI_API_KEY) {
 
 let genAI = null;
 if (process.env.GEMINI_API_KEY) {
+  // ✅ apiVersion "v1" — v1beta dropped support for gemini-1.5-flash
   genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   console.log("[AI] Gemini client initialized");
 } else {
   console.warn("[AI] Gemini NOT initialized — GEMINI_API_KEY missing");
 }
+
+// Free-tier models to try in order (gemini-2.0-flash is current free model)
+const GEMINI_MODELS = [
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-flash-8b",
+];
 
 const HF_KEY = process.env.HF_API_KEY;
 
@@ -76,45 +85,47 @@ const generateWithOpenAI = async (prompt) => {
   return resp.choices?.[0]?.message?.content || "";
 };
 
-// ─── Gemini Generator (gemini-1.5-flash — free tier) ─────────────────────────
-const generateWithGemini = async (prompt, retries = 3) => {
+// ─── Gemini Generator (tries multiple free models in order) ──────────────────
+const generateWithGemini = async (prompt) => {
   if (!genAI) throw new Error("Gemini not configured — no GEMINI_API_KEY");
 
-  for (let attempt = 1; attempt <= retries; attempt++) {
+  let lastError = "";
+
+  for (const modelName of GEMINI_MODELS) {
     try {
-      console.log(`[AI] Gemini attempt ${attempt}/${retries} — model: gemini-1.5-flash`);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      console.log(`[AI] Trying Gemini model: ${modelName}`);
+      const model = genAI.getGenerativeModel({ model: modelName });
       const result = await model.generateContent(prompt);
       const text = result.response.text();
 
-      if (!text || text.trim().length === 0) throw new Error("Empty response from Gemini");
+      if (!text || text.trim().length === 0) throw new Error("Empty response");
 
-      console.log("[AI] Gemini responded successfully. Length:", text.length);
+      console.log(`[AI] ✅ Gemini success with model: ${modelName} (length: ${text.length})`);
       return text;
 
     } catch (error) {
       const msg = error.message || "";
-      console.error(`[AI] Gemini attempt ${attempt} FAILED:`, msg);
+      lastError = msg;
+      console.warn(`[AI] Model "${modelName}" failed:`, msg.slice(0, 120));
 
-      // Quota/rate limit
-      if (msg.includes("429") || msg.includes("quota") || msg.includes("RESOURCE_EXHAUSTED")) {
-        if (attempt < retries) {
-          const wait = attempt * 3000;
-          console.log(`[AI] Rate limited. Waiting ${wait / 1000}s...`);
-          await sleep(wait);
-          continue;
-        }
+      // Rate limit — wait 3s before trying next model
+      if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
+        console.log("[AI] Rate limited, waiting 3s...");
+        await sleep(3000);
       }
 
-      // Invalid API key
-      if (msg.includes("API_KEY_INVALID") || msg.includes("400")) {
-        console.error("[AI] GEMINI_API_KEY is INVALID. Regenerate at: https://aistudio.google.com/app/apikey");
-        throw new Error("Gemini API key is invalid");
+      // Invalid key — no point trying other models
+      if (msg.includes("API_KEY_INVALID") || msg.includes("403")) {
+        console.error("[AI] GEMINI_API_KEY is INVALID. Get a new key: https://aistudio.google.com/app/apikey");
+        throw new Error("Gemini API key is invalid — please regenerate");
       }
 
-      if (attempt === retries) throw error;
+      // 404 = model not found on this account, try next one
+      // continue loop to next model
     }
   }
+
+  throw new Error("All Gemini models failed. Last error: " + lastError);
 };
 
 // ─── Hugging Face Generator ───────────────────────────────────────────────────
