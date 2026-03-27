@@ -143,7 +143,7 @@ const callProvider = (name, prompt) => {
 const getFailureReason = (errorMessage) => {
   const msg = errorMessage || "";
   if (msg.includes("QUOTA_EXCEEDED") || msg.includes("quota") || msg.includes("RESOURCE_EXHAUSTED"))
-    return "AI quota exceeded for today. Showing preset questions instead.";
+    return "AI quota exceeded for today. Setting fallback questions instead.";
   if (msg.includes("API_KEY_INVALID"))
     return "AI service configuration error. Showing preset questions instead.";
   if (msg.includes("ALL_MODELS_FAILED"))
